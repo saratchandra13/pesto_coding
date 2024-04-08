@@ -1,12 +1,18 @@
 package main
 
 import (
+	"github.com/Depado/ginprom"
+	"github.com/didip/tollbooth/v7"
+	"github.com/didip/tollbooth/v7/limiter"
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jinzhu/gorm"
 	"github.com/pesto_coding/product_service/app/controllers"
 	"github.com/pesto_coding/product_service/app/models"
 	"github.com/pesto_coding/product_service/app/services"
+	_ "github.com/sirupsen/logrus"
+	_ "github.com/zsais/go-gin-prometheus"
+	"time"
 )
 
 func main() {
@@ -24,9 +30,19 @@ func main() {
 
 	r := gin.Default()
 
+	// Add Prometheus middleware
+	p := ginprom.New(
+		ginprom.Engine(r),
+		ginprom.Subsystem(""),
+		ginprom.Path("/metrics"),
+	)
+	r.Use(p.Instrument())
+
+	lmt := tollbooth.NewLimiter(float64(100), &limiter.ExpirableOptions{DefaultExpirationTTL: time.Minute})
+
 	r.POST("/products", productController.CreateProduct)
 	r.GET("/products/:id", productController.GetProduct)
-	r.PUT("/products", productController.UpdateProduct)
+	r.PUT("/products", services.RateLimitMiddleware(lmt), productController.UpdateProduct)
 	r.DELETE("/products/:id", productController.DeleteProduct)
 
 	// add role service and controller

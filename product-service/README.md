@@ -17,12 +17,6 @@ curl -X POST -H "Content-Type: application/json" -d '{
 }' http://localhost:8080/products
 ```
 
-### Get all products
-
-```bash
-curl http://localhost:8080/products
-```
-
 ### Get a product by ID
 
 ```bash
