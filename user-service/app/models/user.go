@@ -3,21 +3,23 @@ package models
 import (
 	"crypto/rand"
 	"encoding/base64"
+	"github.com/jinzhu/gorm"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type User struct {
-	ID             string
-	Username       string
+	gorm.Model
+	Username       string `gorm:"unique;not null"`
 	PhoneNumber    string
-	Email          string
-	Password       string `json:"password" binding:"required"` // this will not be stored in our database.
+	Email          string `gorm:"unique;not null"`
+	Password       string `gorm:"-"`
 	Salt           string
-	HashedPassword []byte
+	HashedPassword []byte `gorm:"not null"`
+	Roles          []Role `gorm:"many2many:user_roles;"`
 }
 
 // NewUser creates a new User and hashes their password
-func NewUser(id string, username string, email string, password string) (*User, error) {
+func NewUser(username string, email string, password string) (*User, error) {
 	salt := generateSalt()
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(salt+password), bcrypt.DefaultCost)
 	if err != nil {
@@ -25,7 +27,6 @@ func NewUser(id string, username string, email string, password string) (*User, 
 	}
 
 	user := &User{
-		ID:             id,
 		Username:       username,
 		Email:          email,
 		Salt:           salt,

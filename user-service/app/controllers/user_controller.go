@@ -2,9 +2,10 @@ package controllers
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/lazycoder1995/pesto_coding/app/models"
-	"github.com/lazycoder1995/pesto_coding/app/services"
+	"github.com/pesto_coding/user_service/app/models"
+	"github.com/pesto_coding/user_service/app/services"
 	"net/http"
+	"strconv"
 )
 
 type UserController struct {
@@ -19,7 +20,12 @@ func NewUserController(userService *services.UserService) *UserController {
 
 func (uc *UserController) GetUser(c *gin.Context) {
 	id := c.Param("id")
-	user := uc.UserService.GetUser(id)
+	userId, err := strconv.Atoi(id)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	user := uc.UserService.GetUser(uint(userId))
 	if user == nil {
 		c.JSON(http.StatusNotFound, gin.H{"status": "user not found"})
 		return
@@ -34,7 +40,7 @@ func (uc *UserController) CreateUser(c *gin.Context) {
 		return
 	}
 
-	newUser, err := uc.UserService.CreateUser(user.ID, user.Username, user.Email, user.Password)
+	newUser, err := uc.UserService.CreateUser(user.Username, user.Email, user.Password)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -50,7 +56,7 @@ func (uc *UserController) AuthenticateUser(c *gin.Context) {
 		return
 	}
 
-	isAuthenticated := uc.UserService.AuthenticateUser(user.ID, user.Password)
+	isAuthenticated := uc.UserService.AuthenticateUser(user.Username, user.Password)
 	if !isAuthenticated {
 		c.JSON(http.StatusUnauthorized, gin.H{"status": "unauthorized"})
 		return
